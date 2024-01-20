@@ -7,7 +7,7 @@ from app.product import Product
 @dataclass
 class PricingRule:
     """
-    Base class for pricing strategies
+    Base class for pricing rules
     """
 
     def get_price(self, item, co_products: Dict[Product, int]) -> float:
@@ -26,23 +26,22 @@ class XForYRule(PricingRule):
 
     def get_price(self, product: Product, co_products: Dict[Product, int]) -> float:
         total_quantity = co_products.get(product, 0)
-        if total_quantity <= 0:
-            return 0.0
 
-        deal_count = total_quantity // self.x_quantity
+        deal_count, remaining_quantity = divmod(total_quantity, self.x_quantity)
 
         discounted_price_groups = deal_count * (product.price * self.y_quantity)
-
-        remaining_quantity = total_quantity % self.x_quantity
         remaining_price = remaining_quantity * product.price
 
-        final_price = discounted_price_groups + remaining_price
-
-        return final_price
+        return discounted_price_groups + remaining_price if total_quantity > 0 else 0.0
 
 
 @dataclass
 class BulkDiscountRule(PricingRule):
+    """
+    Example, New Super iPad will have a bulk discounted applied, where the price
+    will drop to $499.99 each, if someone buys more than 4
+    """
+
     discount_threshold: int
     discount_price: float
 
@@ -59,7 +58,7 @@ class BulkDiscountRule(PricingRule):
 @dataclass
 class FreeProductBundleRule(PricingRule):
     """
-    We will bundle in a free VGA adapter free of charge with every MacBook Pro sold
+    Example, bundle in a free VGA adapter free of charge with every MacBook Pro sold
     """
 
     main_product: Product
